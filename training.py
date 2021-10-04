@@ -10,8 +10,9 @@ from matplotlib import pyplot as plt
 
 # Global variables
 
-print_shapes = True
-show_image = True
+print_shapes = False
+show_image = False
+show_extractions = True
 np.random.seed(seed=123)  # <-to force that every run produces the same outcome (comment, or remove, to get randomness)
 
 
@@ -37,7 +38,66 @@ def split_train_test(data, test_ratio):
     return train_set.reset_index(drop=True), test_set.reset_index(drop=True)
 
 
-def show_three_and_seven(set1, set2):
+def feat_extraction(data, theta=0.8):
+    # data: dataframe
+    # theta: parameter of the feature extraction
+    #
+    features = np.zeros([data.shape[0], 8])  # <- allocate memory with zeros
+    data = data.values.reshape([data.shape[0], 28, 28])
+    # -> axis 0: id of instance, axis 1: width(cols) , axis 2: height(rows)
+    for k in range(data.shape[0]):
+        # ..current image
+        x = data[k, :, :]
+        # --width feature
+        sum_cols = x.sum(axis=0)  # <- axis0 of x, not of data!!
+        indc = np.argwhere(sum_cols > theta * sum_cols.max())
+        col_3maxs = np.argsort(sum_cols)[-3:]
+        features[k, 0] = indc[-1] - indc[0]
+        features[k, 1:4] = col_3maxs
+        # --width feature
+        sum_rows = x.sum(axis=1)  # <- axis1 of x, not of data!!
+        indr = np.argwhere(sum_rows > theta * sum_rows.max())
+        features[k, 4] = indr[-1] - indr[0]
+        row_3maxs = np.argsort(sum_rows)[-3:]
+        features[k, 5:8] = row_3maxs
+    col_names = ['width', 'W_max1', 'W_max2', 'W_max3', 'height', 'H_max1', 'H_max2', 'H_max3']
+    return pd.DataFrame(features, columns=col_names)
+
+
+def show_extraction_function(extraction3, extraction7):
+    f1, ax = plt.subplots(2, 3)  # 2, 2 size of the subplot
+    ax[0, 0].plot(extraction3['width'], "o", color='blue', ms=0.7)  # ms = marker size
+    ax[0, 0].plot(extraction7['width'], "x", color='red', ms=0.7)
+    ax[0, 0].title.set_text("width")
+
+    ax[0, 1].plot(extraction3['height'], "o", color='blue', ms=0.7)
+    ax[0, 1].plot(extraction7['height'], "x", color='red', ms=0.7)
+    ax[0, 1].title.set_text("height")
+
+    ax[0, 2].plot(extraction3['W_max1'], "o", color='blue', ms=0.7)
+    ax[0, 2].plot(extraction7['W_max1'], "x", color='red', ms=0.7)
+    ax[0, 2].title.set_text("W_max1")
+
+    ax[1, 0].plot(extraction3['W_max2'], "o", color='blue', ms=0.7)
+    ax[1, 0].plot(extraction7['W_max2'], "x", color='red', ms=0.7)
+    ax[1, 0].title.set_text("W_max2")
+
+    ax[1, 1].plot(extraction3['W_max3'], "o", color='blue', ms=0.7)
+    ax[1, 1].plot(extraction7['W_max3'], "x", color='red', ms=0.7)
+    ax[1, 1].title.set_text("W_max3")
+    
+    calc1 = ((extraction3['W_max2'] / extraction3['W_max1'])) - ((extraction3['W_max3'] / extraction3['W_max1']))
+    calc2 = ((extraction7['W_max2'] / extraction7['W_max1'])) - ((extraction7['W_max3'] / extraction7['W_max1']))
+
+    ax[1, 2].plot(calc1, "o", color='blue', ms=2)
+    ax[1, 2].plot(calc2, "x", color='red', ms=2)
+    ax[1, 2].title.set_text("Test")
+
+
+    plt.show()
+
+
+def show_image_function(set1, set2):
     instance_id_to_show = 9  # <- index of the instance of 3 and 7 that will be shown in a figure
 
     # --- Plot the whole Data Sets
@@ -104,7 +164,13 @@ def main():
     valid_set_7 = loading_datasets('./Datasets/1000_tres.csv', './Datasets/1000_siete.csv')
 
     if show_image:
-        show_three_and_seven(train_set_3, train_set_7)
+        show_image_function(train_set_3, train_set_7)
+
+    extraction_train_set_3 = feat_extraction(train_set_3)
+    extraction_train_set_7 = feat_extraction(train_set_7)
+
+    if show_extractions:
+        show_extraction_function(extraction_train_set_3, extraction_train_set_7)
 
 
 # Main body
