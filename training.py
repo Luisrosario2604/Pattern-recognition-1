@@ -3,10 +3,11 @@
 # Importing python3 from local, just use "python3 <binary>" if is not the same location
 
 # Imports
-import sys
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from sklearn.linear_model import LogisticRegression
+import pickle
 
 # Global variables
 
@@ -14,6 +15,12 @@ print_shapes = False
 show_image = False
 show_extractions = True
 np.random.seed(seed=123)  # <-to force that every run produces the same outcome (comment, or remove, to get randomness)
+z_general = []
+x1_max = 0
+x2_max = 0
+three_general = []
+seven_general = []
+save_model = False
 
 
 # Function declarations
@@ -44,7 +51,14 @@ def split_train_test(data, test_ratio):
     return train_set.reset_index(drop=True), test_set.reset_index(drop=True)
 
 
-def feat_extraction(data, theta=0.6):
+def feat_extraction(data, label, theta=0.6):
+
+    global z_general
+    global x1_max
+    global x2_max
+    global three_general
+    global seven_general
+
     # data: dataframe
     # theta: parameter of the feature extraction
     #
@@ -81,12 +95,26 @@ def feat_extraction(data, theta=0.6):
                 sum_rows_tmp1 += 1
 
         features[k, 8] = sum_rows_tmp1
+
+        x1 = (features[k, 4] ** (1/3)) / 2.7
+        x2 = (features[k, 8]) / 7.0
+
+        if x1 > x1_max:
+            x1_max = x1
+        if x2 > x2_max:
+            x2_max = x2
+        z_general.append([x1, x2, label])
+        if label == 0:
+            three_general.append([x1, x2])
+        else:
+            seven_general.append([x1, x2])
+
     col_names = ['width', 'W_max1', 'W_max2', 'W_max3', 'height', 'H_max1', 'H_max2', 'H_max3', 'number_pixels_seven_rows']
     return pd.DataFrame(features, columns=col_names)
 
 
 def show_extraction_function(extraction3, extraction7):
-    f1, ax = plt.subplots(2, 3)  # 2, 2 size of the subplot
+    f1, ax = plt.subplots(2, 4)  # 2, 2 size of the subplot
     ax[0, 0].plot(jitter(extraction3['width']), "o", color='blue', ms=0.7)  # ms = marker size
     ax[0, 0].plot(jitter(extraction7['width']), "x", color='red', ms=0.7)
     ax[0, 0].title.set_text("width")
@@ -113,6 +141,14 @@ def show_extraction_function(extraction3, extraction7):
     ax[1, 2].plot(jitter(calc1), "o", color='blue', ms=0.7)
     ax[1, 2].plot(jitter(calc2), "x", color='red', ms=0.7)
     ax[1, 2].title.set_text("Caract 2")
+
+    ax[0, 3].plot(jitter(three_general['x1']), "o", color='blue', ms=0.7)
+    ax[0, 3].plot(jitter(seven_general['x1']), "x", color='red', ms=0.7)
+    ax[0, 3].title.set_text("Carac 1.1")
+
+    ax[1, 3].plot(jitter(three_general['x2']), "o", color='blue', ms=0.7)
+    ax[1, 3].plot(jitter(seven_general['x2']), "x", color='red', ms=0.7)
+    ax[1, 3].title.set_text("Carac 2.2")
 
     # idea de la cajas (dividido por 3)
     plt.show()
@@ -175,6 +211,11 @@ def loading_datasets(location_three, location_seven):
 
 
 def main():
+
+    global z_general
+    global three_general
+    global seven_general
+
     full_set_3,  \
     full_set_7,  \
     train_set_3, \
@@ -187,11 +228,28 @@ def main():
     if show_image:
         show_image_function(train_set_3, train_set_7)
 
-    extraction_train_set_3 = feat_extraction(train_set_3)
-    extraction_train_set_7 = feat_extraction(train_set_7)
+    extraction_train_set_3 = feat_extraction(train_set_3, 0)
+    extraction_train_set_7 = feat_extraction(train_set_7, 1)
+
+    col_names = ['x1', 'x2', 'label']
+    col_names_reduced = ['x1', 'x2']
+    z_general = pd.DataFrame(z_general, columns=col_names)
+    three_general = pd.DataFrame(three_general, columns=col_names_reduced)
+    seven_general = pd.DataFrame(seven_general, columns=col_names_reduced)
 
     if show_extractions:
         show_extraction_function(extraction_train_set_3, extraction_train_set_7)
+
+    # print(str(z_general) + "\n")
+    # print("X1 MAX =" + str(x1_max))
+    # print("X2 MAX =" + str(x2_max))
+
+    logisticRegr = LogisticRegression()
+    logisticRegr.fit(z_general.iloc[:, [0, 1]], z_general.iloc[:, 2])
+
+    if save_model:
+        filename = 'finalized_model.sav'
+        pickle.dump(logisticRegr, open(filename, 'wb'))
 
 
 # Main body
