@@ -18,6 +18,12 @@ np.random.seed(seed=123)  # <-to force that every run produces the same outcome 
 
 # Function declarations
 
+
+def jitter(x, sigma=0.06):
+    random_sign = (-1)**np.random.randint(1, 3, *x.shape)
+    return x + np.random.normal(0, sigma, * x.shape) * random_sign
+
+
 def scale_to_unit(data):
     # Since all the pixels are in [0,255] we know the max and min for every possible pixel
     # --> so we can scale all the data at the same time
@@ -38,11 +44,11 @@ def split_train_test(data, test_ratio):
     return train_set.reset_index(drop=True), test_set.reset_index(drop=True)
 
 
-def feat_extraction(data, theta=0.8):
+def feat_extraction(data, theta=0.6):
     # data: dataframe
     # theta: parameter of the feature extraction
     #
-    features = np.zeros([data.shape[0], 8])  # <- allocate memory with zeros
+    features = np.zeros([data.shape[0], 9])  # <- allocate memory with zeros
     data = data.values.reshape([data.shape[0], 28, 28])
     # -> axis 0: id of instance, axis 1: width(cols) , axis 2: height(rows)
     for k in range(data.shape[0]):
@@ -60,40 +66,55 @@ def feat_extraction(data, theta=0.8):
         features[k, 4] = indr[-1] - indr[0]
         row_3maxs = np.argsort(sum_rows)[-3:]
         features[k, 5:8] = row_3maxs
-    col_names = ['width', 'W_max1', 'W_max2', 'W_max3', 'height', 'H_max1', 'H_max2', 'H_max3']
+
+        all_pixels = sum(sum_rows)
+        sum_rows_tmp = 0
+        num_rows_reach_half = 0
+        for num_of_pixels_row in sum_rows:
+            if sum_rows_tmp < all_pixels / 3:
+                sum_rows_tmp += num_of_pixels_row
+                num_rows_reach_half += 1
+
+        sum_rows_tmp1 = 0
+        for tmp in range(7):
+            if sum_rows[tmp] > theta * sum_rows[tmp].max():
+                sum_rows_tmp1 += 1
+
+        features[k, 8] = sum_rows_tmp1
+    col_names = ['width', 'W_max1', 'W_max2', 'W_max3', 'height', 'H_max1', 'H_max2', 'H_max3', 'number_pixels_seven_rows']
     return pd.DataFrame(features, columns=col_names)
 
 
 def show_extraction_function(extraction3, extraction7):
     f1, ax = plt.subplots(2, 3)  # 2, 2 size of the subplot
-    ax[0, 0].plot(extraction3['width'], "o", color='blue', ms=0.7)  # ms = marker size
-    ax[0, 0].plot(extraction7['width'], "x", color='red', ms=0.7)
+    ax[0, 0].plot(jitter(extraction3['width']), "o", color='blue', ms=0.7)  # ms = marker size
+    ax[0, 0].plot(jitter(extraction7['width']), "x", color='red', ms=0.7)
     ax[0, 0].title.set_text("width")
 
-    ax[0, 1].plot(extraction3['height'], "o", color='blue', ms=0.7)
-    ax[0, 1].plot(extraction7['height'], "x", color='red', ms=0.7)
+    ax[0, 1].plot(jitter(extraction3['height']), "o", color='blue', ms=0.7)
+    ax[0, 1].plot(jitter(extraction7['height']), "x", color='red', ms=0.7)
     ax[0, 1].title.set_text("height")
 
-    ax[0, 2].plot(extraction3['W_max1'], "o", color='blue', ms=0.7)
-    ax[0, 2].plot(extraction7['W_max1'], "x", color='red', ms=0.7)
+    ax[0, 2].plot(jitter(extraction3['H_max1']), "o", color='blue', ms=0.7)
+    ax[0, 2].plot(jitter(extraction7['H_max1']), "x", color='red', ms=0.7)
     ax[0, 2].title.set_text("W_max1")
 
-    ax[1, 0].plot(extraction3['W_max2'], "o", color='blue', ms=0.7)
-    ax[1, 0].plot(extraction7['W_max2'], "x", color='red', ms=0.7)
+    ax[1, 0].plot(jitter(extraction3['H_max2']), "o", color='blue', ms=0.7)
+    ax[1, 0].plot(jitter(extraction7['H_max2']), "x", color='red', ms=0.7)
     ax[1, 0].title.set_text("W_max2")
 
-    ax[1, 1].plot(extraction3['W_max3'], "o", color='blue', ms=0.7)
-    ax[1, 1].plot(extraction7['W_max3'], "x", color='red', ms=0.7)
-    ax[1, 1].title.set_text("W_max3")
+    ax[1, 1].plot(jitter(jitter(extraction3['height']) ** (1/3)), "o", color='blue', ms=0.7)
+    ax[1, 1].plot(jitter(jitter(extraction7['height']) ** (1/3)), "x", color='red', ms=0.7)
+    ax[1, 1].title.set_text("Caract 1")
     
-    calc1 = ((extraction3['W_max2'] / extraction3['W_max1'])) - ((extraction3['W_max3'] / extraction3['W_max1']))
-    calc2 = ((extraction7['W_max2'] / extraction7['W_max1'])) - ((extraction7['W_max3'] / extraction7['W_max1']))
+    calc1 = (extraction3['number_pixels_seven_rows'])
+    calc2 = (extraction7['number_pixels_seven_rows'])
 
-    ax[1, 2].plot(calc1, "o", color='blue', ms=2)
-    ax[1, 2].plot(calc2, "x", color='red', ms=2)
-    ax[1, 2].title.set_text("Test")
+    ax[1, 2].plot(jitter(calc1), "o", color='blue', ms=0.7)
+    ax[1, 2].plot(jitter(calc2), "x", color='red', ms=0.7)
+    ax[1, 2].title.set_text("Caract 2")
 
-
+    # idea de la cajas (dividido por 3)
     plt.show()
 
 
