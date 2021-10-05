@@ -51,7 +51,7 @@ def split_train_test(data, test_ratio):
     return train_set.reset_index(drop=True), test_set.reset_index(drop=True)
 
 
-def feat_extraction(data, label, theta=0.6):
+def feat_extraction(data, label, generation_global = False,theta=0.6):
 
     global z_general
     global x1_max
@@ -99,18 +99,29 @@ def feat_extraction(data, label, theta=0.6):
         x1 = (features[k, 4] ** (1/3)) / 2.7
         x2 = (features[k, 8]) / 7.0
 
-        if x1 > x1_max:
+        if x1 > x1_max and generation_global:
             x1_max = x1
-        if x2 > x2_max:
+        if x2 > x2_max and generation_global:
             x2_max = x2
-        z_general.append([x1, x2, label])
-        if label == 0:
+        if generation_global:
+            z_general.append([x1, x2, label])
+        if label == 0 and generation_global:
             three_general.append([x1, x2])
-        else:
+        elif generation_global:
             seven_general.append([x1, x2])
 
     col_names = ['width', 'W_max1', 'W_max2', 'W_max3', 'height', 'H_max1', 'H_max2', 'H_max3', 'number_pixels_seven_rows']
     return pd.DataFrame(features, columns=col_names)
+
+
+def test_model(model, test_set_3, test_set_7):
+    extraction_test_set_3 = feat_extraction(test_set_3, 0)
+    extraction_test_set_7 = feat_extraction(test_set_7, 1)
+
+    col_names = ['x1', 'x2', 'label']
+    test_set = pd.DataFrame(extraction_test_set_3, columns=col_names)
+
+    #print(test_set)
 
 
 def show_extraction_function(extraction3, extraction7):
@@ -172,7 +183,6 @@ def show_image_function(set1, set2):
 
 def loading_datasets(location_three, location_seven):
     fraction_test = 0.2  # <- Percentage of the dataset held for test, in [0,1]
-    fraction_valid = 0.1  # <- Percentage of the train set held for validation, in [0,1]
 
     full_set_3 = pd.read_csv(location_three, header=None)
     full_set_7 = pd.read_csv(location_seven, header=None)
@@ -180,10 +190,6 @@ def loading_datasets(location_three, location_seven):
     # --- Separate Test set -----------------------------
     train_set_3, test_set_3 = split_train_test(full_set_3, fraction_test)
     train_set_7, test_set_7 = split_train_test(full_set_7, fraction_test)
-
-    # --- Separate Validation set -----------------------
-    train_set_3, valid_set_3 = split_train_test(train_set_3, fraction_valid)
-    train_set_7, valid_set_7 = split_train_test(train_set_7, fraction_valid)
 
     if print_shapes:
         print("Shape of full set 3 = ", full_set_3.shape)
@@ -195,19 +201,14 @@ def loading_datasets(location_three, location_seven):
         print("\nShape of test set 3 = ", test_set_3.shape)
         print("Shape of test set 7 = ", test_set_7.shape)
 
-        print("\nShape of valid set 3 = ", valid_set_3.shape)
-        print("Shape of valid set 7 = ", valid_set_7.shape)
-
         full_set_3 = scale_to_unit(full_set_3)
         full_set_7 = scale_to_unit(full_set_7)
         train_set_3 = scale_to_unit(train_set_3)
         train_set_7 = scale_to_unit(train_set_7)
         test_set_3 = scale_to_unit(test_set_3)
         test_set_7 = scale_to_unit(test_set_7)
-        valid_set_3 = scale_to_unit(valid_set_3)
-        valid_set_7 = scale_to_unit(valid_set_7)
 
-    return full_set_3, full_set_7, train_set_3, train_set_7, test_set_3, test_set_7, valid_set_3, valid_set_7
+    return full_set_3, full_set_7, train_set_3, train_set_7, test_set_3, test_set_7
 
 
 def main():
@@ -221,15 +222,13 @@ def main():
     train_set_3, \
     train_set_7, \
     test_set_3,  \
-    test_set_7,  \
-    valid_set_3, \
-    valid_set_7 = loading_datasets('./Datasets/1000_tres.csv', './Datasets/1000_siete.csv')
+    test_set_7 = loading_datasets('./Datasets/1000_tres.csv', './Datasets/1000_siete.csv')
 
     if show_image:
         show_image_function(train_set_3, train_set_7)
 
-    extraction_train_set_3 = feat_extraction(train_set_3, 0)
-    extraction_train_set_7 = feat_extraction(train_set_7, 1)
+    extraction_train_set_3 = feat_extraction(train_set_3, 0, True)
+    extraction_train_set_7 = feat_extraction(train_set_7, 1, True)
 
     col_names = ['x1', 'x2', 'label']
     col_names_reduced = ['x1', 'x2']
@@ -244,12 +243,14 @@ def main():
     # print("X1 MAX =" + str(x1_max))
     # print("X2 MAX =" + str(x2_max))
 
-    logisticRegr = LogisticRegression()
-    logisticRegr.fit(z_general.iloc[:, [0, 1]], z_general.iloc[:, 2])
+    model = LogisticRegression()
+    model.fit(z_general.iloc[:, [0, 1]], z_general.iloc[:, 2])
 
     if save_model:
         filename = 'finalized_model.sav'
-        pickle.dump(logisticRegr, open(filename, 'wb'))
+        pickle.dump(model, open(filename, 'wb'))
+
+    test_model(model, test_set_3, test_set_7)
 
 
 # Main body
