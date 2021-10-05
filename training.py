@@ -51,7 +51,7 @@ def split_train_test(data, test_ratio):
     return train_set.reset_index(drop=True), test_set.reset_index(drop=True)
 
 
-def feat_extraction(data, label, generation_global = False,theta=0.6):
+def feat_extraction(data, label, generation_global=False, theta=0.6):
 
     global z_general
     global x1_max
@@ -62,7 +62,7 @@ def feat_extraction(data, label, generation_global = False,theta=0.6):
     # data: dataframe
     # theta: parameter of the feature extraction
     #
-    features = np.zeros([data.shape[0], 9])  # <- allocate memory with zeros
+    features = np.zeros([data.shape[0], 12])  # <- allocate memory with zeros
     data = data.values.reshape([data.shape[0], 28, 28])
     # -> axis 0: id of instance, axis 1: width(cols) , axis 2: height(rows)
     for k in range(data.shape[0]):
@@ -99,6 +99,10 @@ def feat_extraction(data, label, generation_global = False,theta=0.6):
         x1 = (features[k, 4] ** (1/3)) / 2.7
         x2 = (features[k, 8]) / 7.0
 
+        features[k, 9] = x1
+        features[k, 10] = x2
+        features[k, 11] = label
+
         if x1 > x1_max and generation_global:
             x1_max = x1
         if x2 > x2_max and generation_global:
@@ -110,7 +114,7 @@ def feat_extraction(data, label, generation_global = False,theta=0.6):
         elif generation_global:
             seven_general.append([x1, x2])
 
-    col_names = ['width', 'W_max1', 'W_max2', 'W_max3', 'height', 'H_max1', 'H_max2', 'H_max3', 'number_pixels_seven_rows']
+    col_names = ['width', 'W_max1', 'W_max2', 'W_max3', 'height', 'H_max1', 'H_max2', 'H_max3', 'number_pixels_seven_rows', 'x1', 'x2', 'label']
     return pd.DataFrame(features, columns=col_names)
 
 
@@ -118,8 +122,13 @@ def test_model(model, test_set_3, test_set_7):
     extraction_test_set_3 = feat_extraction(test_set_3, 0)
     extraction_test_set_7 = feat_extraction(test_set_7, 1)
 
-    col_names = ['x1', 'x2', 'label']
-    test_set = pd.DataFrame(extraction_test_set_3, columns=col_names)
+    extraction_test_set_3 = extraction_test_set_3.drop(columns=['width', 'W_max1', 'W_max2', 'W_max3', 'height', 'H_max1', 'H_max2', 'H_max3', 'number_pixels_seven_rows'])
+    extraction_test_set_7 = extraction_test_set_7.drop(columns=['width', 'W_max1', 'W_max2', 'W_max3', 'height', 'H_max1', 'H_max2', 'H_max3', 'number_pixels_seven_rows'])
+
+    extraction_test_set_all = pd.concat([extraction_test_set_3, extraction_test_set_7], axis=0)
+
+    # 200 threes + 200 seven
+    print(extraction_test_set_all.iloc[214, :])
 
     #print(test_set)
 
