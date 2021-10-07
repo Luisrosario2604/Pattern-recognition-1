@@ -72,18 +72,6 @@ def feat_extraction(data, label, theta=0.5):
         x1 = height ** (1 / 3) / 2.7
         x2 = sum_rows_tmp1 / 5.0
 
-        if label == 2:
-            f1, ax = plt.subplots(2, 2)  # 2, 2 size of the subplot
-            ax[0, 0].imshow(x, cmap='Blues')
-            ax[0, 1].imshow(x, cmap='Blues')
-            # --> 2 figures in which each row is a row of the dataset
-
-            # --- Plot an instance of set1
-            ax[1, 0].imshow(x, 'Blues')
-            # --- Plot an instance of set2
-            ax[1, 1].imshow(x, 'Blues')
-            plt.show()
-
         features[k, 0] = x1
         features[k, 1] = x2
         features[k, 2] = label
