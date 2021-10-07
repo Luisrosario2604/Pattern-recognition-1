@@ -1,6 +1,9 @@
 #!/usr/bin/python3
-
 # Importing python3 from local, just use "python3 <binary>" if is not the same location
+
+# RECONOCIMIENTO DE PATRONES - RETO 1
+# Máster en Vision Artificial
+# Luis Rosario Tremoulet y Vicente Gilabert Maño.
 
 # [IMPORTS]
 import pickle
@@ -11,10 +14,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, mean_squared_error
 
 # [GLOBAL VARIABLES]
-is_printing_shapes = False      # Do you want to print the datasets sizes ?
-is_showing_image = False        # Do you want to see the representation of the three's and seven's ?
-is_showing_extractions = False  # Do you want to see the extractions x1 and x2 ?
-is_saving_model = False         # Do you want to save the model into a file (with pickle) ?
+is_printing_shapes = True       # Do you want to print the datasets sizes ?
+is_showing_image = True         # Do you want to see the representation of the three's and seven's ?
+is_showing_extractions = True   # Do you want to see the extractions x1 and x2 ?
+is_saving_model = True          # Do you want to save the model into a file (with pickle) ?
 is_testing_model = True         # Do you want to test the model with the test set ?
 is_resulting_model = True       # Do you want to save the results from the 10.000 MNIST files ?
 
@@ -50,9 +53,7 @@ def split_train_test(data, test_ratio):
     return train_set.reset_index(drop=True), test_set.reset_index(drop=True)
 
 
-# data: dataframe
-# label = 0 for three's and 1 for seven's
-# theta: parameter of the feature extraction
+# Getting extraction's of the three's and seven's = x1, x2
 def feat_extraction(data, label, theta=0.5):
 
     features = np.zeros([data.shape[0], 3])  # <- allocate memory with zeros
@@ -80,20 +81,24 @@ def feat_extraction(data, label, theta=0.5):
     return pd.DataFrame(features, columns=col_names)
 
 
+# Function to predict results with competition dataset
 def result_model(model):
-    # PREDICT RESULT WITH COMPETITION DATASET.
+
     reto1_dataset = pd.read_csv("./Datasets/reto1_X.csv", header=None)
     reto1_dataset = scale_to_unit(reto1_dataset)
     reto1_dataset = feat_extraction(reto1_dataset, 2)
     reto1_dataset = reto1_dataset.drop(columns=['label'])
     predictions_reto1 = model.predict(reto1_dataset)
+
+    # --- Replace 0 -> 3 and 1 -> 7.
     predictions_reto1 = np.array(predictions_reto1)
     replace = np.where(predictions_reto1 == 0, 3, predictions_reto1)
     to_save_results = np.where(replace == 1, 7, replace)
+    # --- Save prediction in .csv file.
     np.savetxt('Reto1_Ypred.csv', to_save_results, fmt='%i', delimiter=',')
 
 
-# FUNCTION TO TEST MODEL.
+# Function to test model with our testing dataset
 def test_model(model, test_set, show_cm=True):
 
     predictions = model.predict(test_set.iloc[:, [0, 1]])
@@ -111,9 +116,10 @@ def test_model(model, test_set, show_cm=True):
         print(cm)
 
 
+# Show plot with our features for both numbers.
 def show_extraction(extraction3, extraction7):
 
-    f1, ax = plt.subplots(2)  # 1,1 size of the subplot
+    f1, ax = plt.subplots(2)  # 2 size of the subplot
 
     ax[0].plot(jitter(extraction3['x1']), "o", color='blue', ms=0.7)
     ax[0].plot(jitter(extraction7['x1']), "x", color='red', ms=0.7)
@@ -126,6 +132,7 @@ def show_extraction(extraction3, extraction7):
     plt.show()
 
 
+# Function to show all the three's and seven's as pixels
 def show_image(set1, set2, index):
 
     instance_id_to_show = index  # <- index of the instance of 3 and 7 that will be shown in a figure
@@ -143,6 +150,7 @@ def show_image(set1, set2, index):
     plt.show()
 
 
+# Read .csv, split and normalize dataset.
 def loading_datasets(location_three, location_seven):
 
     fraction_test = 0.2  # <- Percentage of the dataset held for test, in [0,1]
@@ -150,7 +158,7 @@ def loading_datasets(location_three, location_seven):
     full_set_3 = pd.read_csv(location_three, header=None)
     full_set_7 = pd.read_csv(location_seven, header=None)
 
-    # --- Separate Test set -----------------------------
+    # --- Separate Test set
     train_set_3, test_set_3 = split_train_test(full_set_3, fraction_test)
     train_set_7, test_set_7 = split_train_test(full_set_7, fraction_test)
 
@@ -176,6 +184,7 @@ def loading_datasets(location_three, location_seven):
 
 def main():
 
+    # --- Load dataset and get splited and normalize data.
     full_set_3, \
     full_set_7, \
     train_set_3, \
@@ -183,12 +192,12 @@ def main():
     test_set_3, \
     test_set_7 = loading_datasets('./Datasets/1000_tres.csv', './Datasets/1000_siete.csv')
 
-    # Show index image (3 and 7).
+    # --- Show image with some index (3 and 7).
     if is_showing_image:
         index = 5
         show_image(train_set_3, train_set_7, index)
 
-    # FEATURES EXTRACTION OF TRAINING AND TESTING DATASETS (3 and 7).
+    # --- Features extraction of training and testing datasets (3 and 7)
     extraction_train_set_3 = feat_extraction(train_set_3, 0)
     extraction_train_set_7 = feat_extraction(train_set_7, 1)
     extraction_test_set_3 = feat_extraction(test_set_3, 0)
@@ -197,22 +206,24 @@ def main():
     extraction_test_set_all = pd.concat([extraction_test_set_3, extraction_test_set_7], axis=0)
     extraction_train_set_all = pd.concat([extraction_train_set_3, extraction_train_set_7], axis=0)
 
-    # If show_extraction = True -> Show Plots of new features.
+    # --- If show_extraction = True -> Show Plots of new features.
     if is_showing_extractions:
         show_extraction(extraction_train_set_3, extraction_train_set_7)
 
-    # CREATE LOGISTIC REGRESION MODEL AND TRAIN (FIT).
+    # --- Create logistic regresion model and train (fit)
     model = LogisticRegression()
     model.fit(extraction_train_set_all.iloc[:, [0, 1]], extraction_train_set_all.iloc[:, 2])
 
-    # SAVE MODEL
+    # --- Save model
     if is_saving_model:
         filename = 'trained_model.sav'
         pickle.dump(model, open(filename, 'wb'))
 
+    # --- Test model with test data
     if is_testing_model:
-        test_model(model, extraction_test_set_all, show_cm=False)
+        test_model(model, extraction_test_set_all, show_cm=True)
 
+    # --- Get prediction using our model and competition dataset. Generate .csv file with results.
     if is_resulting_model:
         result_model(model)
 
