@@ -4,9 +4,9 @@
 
 The objective of this project is to construct a linear classifier using logistic regression.
 
-You will need to be able to separate MNIST images representing the numbers 3 and 7.
+The goal is to separate MNIST images representing the numbers 3 and 7.
 
-To do so, only two features (extracted from the image or obtained by feature engineering) will be constructed.
+To do so, only two features (extracted from the images or obtained by feature engineering) will be constructed.
 
 These two single features will then be used to train the classifier.
 
@@ -14,7 +14,7 @@ These two single features will then be used to train the classifier.
 
 - Construct a linear classifier with only 2 features
 - Find the features that will best separate the two types of images
-- Have model score >= 0.9
+- Have model score (accuracy) >= 0.9
 
 ## Requirements
 
@@ -60,17 +60,17 @@ $ python ./src/main.py
     └── src
         └── main.py
 
-## Exemples
+## Examples
 
-This is some examples of the MNIST database
+These are some examples of the MNIST database
 
 ![MNIST](./imgs/Figure_1.png)
 
-This are the 2 features selected
+These are the 2 features selected
 
 ![MNIST](./imgs/Figure_2.png)
 
-This are some results of the model (score = 0.9525)
+These are some results of the model (score = 0.9525)
 
 ![MNIST](./imgs/Figure_3.png)
 
