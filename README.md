@@ -68,11 +68,11 @@ These are some examples of the MNIST database
 
 These are the 2 features selected
 
-![MNIST](./imgs/Figure_2.png)
+![2 features](./imgs/Figure_2.png)
 
 These are some results of the model (score = 0.9525)
 
-![MNIST](./imgs/Figure_3.png)
+![Result](./imgs/Figure_3.png)
 
 ## Authors
 
