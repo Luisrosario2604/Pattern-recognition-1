@@ -1,4 +1,4 @@
-matplotlib==3.3.4
-numpy==1.21.3
-pandas==1.4.2
-scikit_learn==1.1.1
+matplotlib~=3.3.4
+numpy~=1.21.3
+pandas~=1.4.2
+scikit_learn~=1.1.1

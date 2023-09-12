@@ -18,25 +18,25 @@ These two single features will then be used to train the classifier.
 
 ## Requirements
 
-* Python 3.7+
+* Python 3.9+
 
-
-* matplotlib == 3.3.4
-* numpy == 1.21.3
-* pandas == 1.4.2 
-* scikit_learn == 1.1.1
-
+* matplotlib ~= 3.3.4
+* numpy ~= 1.21.3
+* pandas ~= 1.4.2
+* scikit_learn ~= 1.1.1
 
 How to install all the requirements :
+
 ```bash
-$ pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 ## Usage
 
 Execute only from project directory
+
 ```bash
-$ python ./src/main.py
+python ./src/main.py
 ```
 
 ## Structure
